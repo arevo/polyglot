@@ -6,7 +6,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes mongodb-server
 RUN curl -sL https://deb.nodesource.com/setup_4.x |  bash -
 RUN apt-get install -y --force-yes nodejs
 RUN mkdir -p /data/db
-RUN /etc/init.d/mongodb start
 RUN pip install httpie-edgegrid 
 ADD . /opt
 WORKDIR /opt/ruby
