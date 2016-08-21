@@ -6,7 +6,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes mongodb-server
 RUN curl -sL https://deb.nodesource.com/setup_4.x |  bash -
 RUN apt-get install -y --force-yes nodejs
 RUN mkdir -p /data/db
-RUN pip install httpie-edgegrid 
 ADD . /opt
 WORKDIR /opt/ruby
 RUN gem install bundler
@@ -16,7 +15,7 @@ RUN pip install -r requirements.txt
 WORKDIR /opt/node
 RUN npm install
 WORKDIR /opt/perl
-RUN cpan -i -f Dancer Dancer::Plugin::CRUD MongoDB JSON
+RUN cpan -i -f Dancer Dancer::Plugin::CRUD MongoDB JSON YAML
 WORKDIR /opt/php
 RUN php composer.phar install
 WORKDIR /opt/data
