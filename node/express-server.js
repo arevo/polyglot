@@ -25,6 +25,7 @@ var bodyParser = require('body-parser');
 
 app.use('/demo', express.static(path.join(__dirname, '..', 'static')));
 app.use(bodyParser.json());
+app.set('json spaces', 4);
 
 // index
 app.get('/', function(req, res) {
@@ -94,7 +95,7 @@ router.route('/quotes/:index')
   Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
     if (err) return res.send(500, { error: err });
     res.setHeader('Content-Type', 'application/json');
-    return res.status(202).send(req.params.index);
+    return res.status(202).send("/api/quotes/" + req.params.index);
   });
 })
 .delete(function(req, res, next) {
