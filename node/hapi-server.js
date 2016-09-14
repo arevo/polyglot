@@ -71,23 +71,37 @@ server.route([
         if (request.payload.author) {
           newQuote = new Quote({'content': request.payload.content, 'author': request.payload.author, 'index': quotecount});
         } else {
-         newQuote = new Quote({'content': request.payload.content, 'index':quotecount});
+          newQuote = new Quote({'content': request.payload.content, 'index': quotecount});
         }
         newQuote.save(function (err, newQuote) {
           if (err) return console.error(err);
           reply(quotecount).code(201);
+        });
+    }
+  },
+  // Random quote
+  {
+    method: 'GET',
+    path: '/api/quotes/random',
+    config: { json: { space: 2 } },
+    handler: function(request, reply) {
+      var random = Math.floor(Math.random() * quotecount);
+      var result = Quote.findOne({"index":random});
+      result.exec(function(err, quote) {
+        reply(quote);
       });
     }
   },
+
   // Get single quote
   {
     method: 'GET',
     path: '/api/quotes/{index}',
     config: { json: { space: 2 } },
     handler: function(request, reply) {
-    Quote.findOne({"index":request.params.index},
-      function (err, result) {
-        reply(result);
+      var result = Quote.findOne({"index":request.params.index});
+      result.exec(function(err, quote) {
+        reply(quote);
       });
     }
   },
@@ -130,19 +144,6 @@ server.route([
             }
         });
      }
-  },
-  // Random quote
-  {
-    method: 'GET',
-    path: '/api/quotes/random',
-    config: { json: { space: 2 } },
-    handler: function(request, reply) {
-      var random = Math.floor(Math.random() * quotecount);
-      Quote.findOne({"index":random},
-      function (err, result) {
-        reply(result);
-      })
-    }
   },
   {
     method: 'GET',

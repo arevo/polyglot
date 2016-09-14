@@ -66,16 +66,13 @@ router.route('/quotes')
 });
 
 // Random quote
+// /api/quotes/random
 router.route('/quotes/random')
 .get(function(request, reply) {
     var random = Math.floor(Math.random() * quotecount);
-    Quote.findOne({"index":random},
-    function (err, result) {
-      if (err) {
-        console.log(err);
-        reply.redirect('/quotes/random');
-      }
-     reply.send(result);
+    var result = Quote.findOne({"index":random});
+    result.exec(function(err, quote) {
+      reply.send(quote);
     });
 });
 
@@ -83,15 +80,15 @@ router.route('/quotes/random')
 router.route('/quotes/:index')
 // get existing quote
 .get(function(request, reply) {
-    Quote.findOne({"index":request.params.index},
-    function (err, result) {
-        reply.send(result);
+    var result = Quote.findOne({"index":request.params.index});
+    result.exec(function(err, quote) {
+      reply.send(quote);
     });
 })
 // update existing quote
 .put(function(request, reply) {
   if(!request.body.hasOwnProperty('content') && (!request.body.hasOwnProperty('author'))) {
-    return reply.status(400).send('Error 400: Post syntax incorrect.');
+    return reply.status(400).send('Error 400: Put syntax incorrect.');
   }
   var query = {'index':request.params.index};
   var newQuote = new Quote();
@@ -105,28 +102,21 @@ router.route('/quotes/:index')
   delete upsertData._id;
   Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
     if (err) return reply.send(500, { error: err });
-    //reply.setHeader('Content-Type', 'application/json');
     return reply.status(202).send(upsertData);
   });
 })
 // delete existing quote
 .delete(function(request, reply) {
-   Quote.findOneAndRemove({"index":request.params.index},
-    function (err, result) {
-        if (!err) {
-           reply.status(204).send();
-        }
+   result = Quote.findOneAndRemove({"index":request.params.index});
+   result.exec(function (err, result) {
+        reply.status(204).send();
     });
 });
-
-
 
 // index with helpful message
 app.get('/', function(req, res) {
   res.send('Hello world from express');
 });
-
-
 
 var server = app.listen(8080, "0.0.0.0", function() {
   console.log('Express is listening to http://localhost:8080');
