@@ -67,7 +67,7 @@ router.route('/quotes')
   }
   newQuote.save(function (err, newQuote) {
     if (err) return console.error(err);
-    res.json(quotecount);
+    return res.status(201).send(newQuote);
   });;
 });
 
@@ -102,7 +102,7 @@ router.route('/quotes/:index')
    Quote.findOneAndRemove({"index":req.params.index},
     function (err, result) {
         if (!err) {
-           res.json(true);
+           res.status(204).send();
         }
     });
 });

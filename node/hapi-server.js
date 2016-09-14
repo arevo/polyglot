@@ -45,6 +45,7 @@ server.route([
   {
     method: 'GET',
     path: '/api/quotes/random',
+    config: { json: { space: 2 } },
     handler: function(request, reply) {
       var random = Math.floor(Math.random() * quotecount);
       Quote.findOne({"index":random},
@@ -56,6 +57,7 @@ server.route([
 {
     method: 'GET',
     path: '/api/quotes',
+    config: { json: { space: 2 } },
     handler: function(request, reply) {
    	var result = Quote.find().sort({'index': -1}).limit(10);
    	result.exec(function(err, quotes) {
@@ -66,6 +68,7 @@ server.route([
  {
     method: 'POST',
     path: '/api/quotes',
+    config: { json: { space: 2 } },
     handler: function(request, reply) {
         if(!request.payload.content) {
           return reply('Error 400: Post syntax incorrect.').code(400);
@@ -79,13 +82,14 @@ server.route([
         }
         newQuote.save(function (err, newQuote) {
           if (err) return console.error(err);
-          reply(quotecount);
+          reply(quotecount).code(201);
       });
     }
   },
   {
     method: 'GET',
     path: '/api/quotes/{index}',
+    config: { json: { space: 2 } },
     handler: function(request, reply) {
     Quote.findOne({"index":request.params.index},
       function (err, result) {
@@ -96,6 +100,7 @@ server.route([
 {
     method: 'PUT',
     path: '/api/quotes/{index}',
+    config: { json: { space: 2 } },
     handler: function(request, reply) {
         if((!request.payload.content) && (!request.payload.author)) {
           return reply('Error 400: Post syntax incorrect.').code(400);
@@ -114,7 +119,7 @@ server.route([
           if (err)  {
             return reply({ error: err }).code(500);
           }
-          return reply(request.params.index);
+          return reply(request.params.index).code(202);
         });
     }
   },
@@ -125,7 +130,7 @@ server.route([
         Quote.findOneAndRemove({"index":request.params.index},
           function (err, result) {
             if (!err) {
-              reply(true);
+	      reply().code(204)
             }
         });
     }
