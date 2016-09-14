@@ -13,8 +13,9 @@ var quoteSchema = mongoose.Schema({
 
 var quotecount;
 var Quote = mongoose.model('Quote', quoteSchema)
-Quote.count().exec(function(err, count){
-   quotecount = count;
+// Find the highest quote number for creating new index
+Quote.findOne().sort({"index": -1}).exec(function(err, quote){
+   quotecount = quote.index;
 });
 // *******************************************
 
@@ -30,6 +31,7 @@ server.register(require('inert'), function(err) {
     throw err;
   }
   
+  // Register static path
   server.route({
     method : 'GET', path : '/demo/{path*}', handler : {
       directory : {
@@ -42,30 +44,20 @@ server.register(require('inert'), function(err) {
 });
 
 server.route([
+  // Get Quote List
   {
-    method: 'GET',
-    path: '/api/quotes/random',
-    config: { json: { space: 2 } },
-    handler: function(request, reply) {
-      var random = Math.floor(Math.random() * quotecount);
-      Quote.findOne({"index":random},
-      function (err, result) {
-        reply(result);
-      })
-    }
-  },
-{
     method: 'GET',
     path: '/api/quotes',
     config: { json: { space: 2 } },
     handler: function(request, reply) {
-   	var result = Quote.find().sort({'index': -1}).limit(10);
-   	result.exec(function(err, quotes) {
-		reply(quotes);
-	})
+   	   var result = Quote.find().sort({'index': -1}).limit(10);
+   	   result.exec(function(err, quotes) {
+		     reply(quotes);
+	     })
     }
   },
- {
+  // Create new quote
+  {
     method: 'POST',
     path: '/api/quotes',
     config: { json: { space: 2 } },
@@ -86,6 +78,7 @@ server.route([
       });
     }
   },
+  // Get single quote
   {
     method: 'GET',
     path: '/api/quotes/{index}',
@@ -97,7 +90,8 @@ server.route([
       });
     }
   },
-{
+  // Update existing quote
+  {
     method: 'PUT',
     path: '/api/quotes/{index}',
     config: { json: { space: 2 } },
@@ -123,6 +117,7 @@ server.route([
         });
     }
   },
+  // Delete existing quote
   {
     method: 'DELETE',
     path: '/api/quotes/{index}',
@@ -130,9 +125,22 @@ server.route([
         Quote.findOneAndRemove({"index":request.params.index},
           function (err, result) {
             if (!err) {
-	      reply().code(204)
+	            reply().code(204)
             }
         });
+     }
+  },
+  // Random quote
+  {
+    method: 'GET',
+    path: '/api/quotes/random',
+    config: { json: { space: 2 } },
+    handler: function(request, reply) {
+      var random = Math.floor(Math.random() * quotecount);
+      Quote.findOne({"index":random},
+      function (err, result) {
+        reply(result);
+      })
     }
   },
   {
