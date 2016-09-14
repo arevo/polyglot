@@ -4,6 +4,7 @@
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost/test');
 var db = mongoose.connection;
+mongoose.Promise = global.Promise;
 
 var quoteSchema = mongoose.Schema({
         content: String,

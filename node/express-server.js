@@ -4,6 +4,7 @@
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost/test');
 var db = mongoose.connection;
+mongoose.Promise = global.Promise;
 
 var quoteSchema = mongoose.Schema({
         content: String,
@@ -33,95 +34,98 @@ app.use('/demo', express.static(path.join(__dirname, '..', 'static')));
 app.use(bodyParser.json());
 app.set('json spaces', 2);
 
-// index
-app.get('/', function(req, res) {
-  res.send('Hello world from express');
-});
-
 // Base URI for the REST api routes
 app.use('/api', router);
 
 // Quote list
 router.route('/quotes')
 // Get last 10 quotes
-.get(function(req, res, next) {
+.get(function(request, reply) {
    var result = Quote.find().sort({'index': -1}).limit(10);
    result.exec(function(err, quotes) {
-	   res.send(quotes);
+	   reply.send(quotes);
    });
 })
 // Create new quote
-.post(function(req, res, next) {
-  if(!req.body.hasOwnProperty('content')) {
-    return res.status(400).send('Error 400: Post syntax incorrect.');
+.post(function(request, reply) {
+  if(!request.body.hasOwnProperty('content')) {
+    return reply.status(400).send('Error 400: Post syntax incorrect.');
   }
   // Simple way to create a new quote index for this demo
   quotecount = quotecount+1; 
   var newQuote;
-  if (req.body.hasOwnProperty('author')) {
-    newQuote = new Quote({'content': req.body.content, 'author': req.body.author, 'index': quotecount});
+  if (request.body.hasOwnProperty('author')) {
+    newQuote = new Quote({'content': request.body.content, 'author': request.body.author, 'index': quotecount});
   } else {
-    newQuote = new Quote({'content': req.body.content, 'index':quotecount});
+    newQuote = new Quote({'content': request.body.content, 'index':quotecount});
   }
   newQuote.save(function (err, newQuote) {
     if (err) return console.error(err);
-    return res.status(201).send(newQuote);
+    return reply.status(201).send(newQuote);
   });
 });
 
-// /api/quotes/1
-router.route('/quotes/:index')
-// get existing quote
-.get(function(req, res, next) {
-    Quote.findOne({"index":req.params.index},
-    function (err, result) {
-        res.send(result);
-    });
-})
-// update existing quote
-.put(function(req, res, next) {
-  if(!req.body.hasOwnProperty('content') && (!req.body.hasOwnProperty('author'))) {
-    return res.status(400).send('Error 400: Post syntax incorrect.');
-  }
-  var query = {'index':req.params.index};
-  var newQuote = new Quote();
-  if (req.body.hasOwnProperty('author')) {
-        newQuote.author = req.body.author;
-  };
-  if (req.body.hasOwnProperty('content')) {
-        newQuote.content = req.body.content;
-  };
-  var upsertData = newQuote.toObject();
-  delete upsertData._id;
-  Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
-    if (err) return res.send(500, { error: err });
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(202).send("/api/quotes/" + req.params.index);
-  });
-})
-// delete existing quote
-.delete(function(req, res, next) {
-   Quote.findOneAndRemove({"index":req.params.index},
-    function (err, result) {
-        if (!err) {
-           res.status(204).send();
-        }
-    });
-});
-
-// Random
+// Random quote
 router.route('/quotes/random')
-.get(function(req, res, next) {
+.get(function(request, reply) {
     var random = Math.floor(Math.random() * quotecount);
     Quote.findOne({"index":random},
     function (err, result) {
       if (err) {
         console.log(err);
-        res.redirect('/quotes/random');
+        reply.redirect('/quotes/random');
       }
-     res.send(result);
+     reply.send(result);
     });
 });
+
+// /api/quotes/1
+router.route('/quotes/:index')
+// get existing quote
+.get(function(request, reply) {
+    Quote.findOne({"index":request.params.index},
+    function (err, result) {
+        reply.send(result);
+    });
+})
+// update existing quote
+.put(function(request, reply) {
+  if(!request.body.hasOwnProperty('content') && (!request.body.hasOwnProperty('author'))) {
+    return reply.status(400).send('Error 400: Post syntax incorrect.');
+  }
+  var query = {'index':request.params.index};
+  var newQuote = new Quote();
+  if (request.body.hasOwnProperty('author')) {
+        newQuote.author = request.body.author;
+  };
+  if (request.body.hasOwnProperty('content')) {
+        newQuote.content = request.body.content;
+  };
+  var upsertData = newQuote.toObject();
+  delete upsertData._id;
+  Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
+    if (err) return reply.send(500, { error: err });
+    //reply.setHeader('Content-Type', 'application/json');
+    return reply.status(202).send(upsertData);
+  });
+})
+// delete existing quote
+.delete(function(request, reply) {
+   Quote.findOneAndRemove({"index":request.params.index},
+    function (err, result) {
+        if (!err) {
+           reply.status(204).send();
+        }
+    });
+});
+
+
+
+// index with helpful message
+app.get('/', function(req, res) {
+  res.send('Hello world from express');
+});
+
 
 
 var server = app.listen(8080, "0.0.0.0", function() {
