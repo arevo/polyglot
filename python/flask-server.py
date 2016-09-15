@@ -5,43 +5,28 @@ from bson.json_util import dumps, default
 import os
 from random import randint
 
-app = Flask("test",static_folder='')
+app = Flask("test")
 api = Api(app)
 mongo = PyMongo(app)
 
-
+# We'll use parser in put and post requests, so set it up here
+# outside of the classes
 parser = reqparse.RequestParser()
 parser.add_argument('author')
-parser.add_argument('content', required=True,
-help="Content cannot be blank!")
-
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-STATIC_ROOT = os.path.join(APP_ROOT, "..", "static")
+parser.add_argument('content')
 
 class Quote(Resource):
     def get(self, quote_id):
         if quote_id == "random":
-	    print "Random is random"
             quotes = mongo.db.quotes.find().sort("index", -1).limit(1)
             max_number = int(quotes[0]["index"])
             rand_quote = randint(0, max_number)
             quotes = mongo.db.quotes.find_one({"index": int(rand_quote)})
         else:
             quotes = mongo.db.quotes.find_one({"index": int(quote_id)})
-        resp = Response(dumps(quotes, default=default),
+        resp = Response(dumps(quotes, default=default, indent=2),
                 mimetype='application/json')
         return resp
-
-    def delete(self, quote_id):
-        print "Quote id is %s" % quote_id
-        try:
-            mongo.db.quotes.remove({
-                'index': int(quote_id)
-            })
-        except Exception as ve:
-            print ve
-            abort(400, str(ve))
-        return '', 204
 
     def put(self, quote_id):
         args = parser.parse_args()
@@ -64,27 +49,32 @@ class Quote(Resource):
             abort(400, str(ve))
         return 201
 
+    def delete(self, quote_id):
+        try:
+            mongo.db.quotes.remove({
+                'index': int(quote_id)
+            })
+        except Exception as ve:
+            print ve
+            abort(400, str(ve))
+        return '', 204
 
-# TodoList
-# shows a list of all todos, and lets you POST to add new tasks
+
 class QuoteList(Resource):
     def get(self):
         quotes = mongo.db.quotes.find().sort("index", -1).limit(10)
-        resp = Response(dumps(quotes, default=default),
+        resp = Response(dumps(quotes, default=default, indent=2),
                 mimetype='application/json')
         return resp
 
     def post(self):
         args = parser.parse_args()
         quotes = mongo.db.quotes.find().sort("index", -1).limit(1)
-        print quotes[0]
         args["index"] = int(quotes[0]["index"]) + 1
-        print args
         try:
             mongo.db.quotes.insert(args)
         except Error as ve:
             abort(400, str(ve))
-
         return 201
 
 @app.route('/')
@@ -92,8 +82,10 @@ def hello_world():
     return 'Hello from Flask!'
 
 
-@app.route('/demo')
+@app.route('/demo/')
 def serve_page():
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+    STATIC_ROOT = os.path.join(APP_ROOT, "..", "static")
     return send_from_directory(STATIC_ROOT, "index.html")
 
 api.add_resource(QuoteList, '/api/quotes')
