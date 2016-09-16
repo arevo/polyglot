@@ -75,7 +75,7 @@ server.route([
         }
         newQuote.save(function (err, newQuote) {
           if (err) return console.error(err);
-          reply(quotecount).code(201);
+          reply({"index":quotecount}).code(201);
         });
     }
   },
@@ -128,7 +128,7 @@ server.route([
           if (err)  {
             return reply({ error: err }).code(500);
           }
-          return reply(request.params.index).code(202);
+          return reply({"index":request.params.index}).code(201);
         });
     }
   },

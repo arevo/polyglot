@@ -10,15 +10,6 @@ my $json = JSON->new->allow_nonref;
 set content_type => 'application/json';
 set port         => 8080;
 
-get '/' => sub{
-    return {message => "Hello from Perl and Dancer"};
-};
-
-set public => path(dirname(__FILE__), '..', 'static');
-
-get "/demo/?" => sub {
-    send_file '/index.html'
-};
 
 get '/api/quotes' => sub {
     my $response = $quotes->find()->sort({'index' => -1})->limit(10);
@@ -54,33 +45,20 @@ post '/api/quotes' => sub {
 
     my $response = $quotes->insert_one(\%response);
     status 201;
-    return $max_id;
+    return {"index"=>$max_id};
 };
-
 
 get '/api/quotes/random' => sub {
     my $max_id = $quotes->count();
     my $random = int(rand($max_id));
-    my $response = $quotes->find({"index" => $random});
-    my $quote = $response->next;
-    return {"content" => $quote->{'content'},
-            "index"   => $quote->{'index'},
-            "author"  => $quote->{'author'}
-    };
+    my $response = $quotes->find_one({"index" => $random});
+    return $response;
 };
 
 
 get '/api/quotes/:index' => sub {
-    
-    my $response = $quotes->find({"index" => int(params->{'index'})}); 
-    while(my $quote = $response->next) {
-        return {"content" => $quote->{'content'},
-            "index"   => $quote->{'index'},
-            "author"  => $quote->{'author'}
-        };
-    };
-    status 404;
-    return;
+    my $response = $quotes->find_one({"index" => int(params->{'index'})}); 
+    return $response;
 };
 
 put '/api/quotes/:index' => sub {
@@ -98,7 +76,7 @@ put '/api/quotes/:index' => sub {
                         {'$set' => {'author'=>$author, 'content'=>$content}});
 
     status 202;
-    return params->{'index'};
+    return {"index"=>params->{'index'}};
 };
 
 del '/api/quotes/:index' => sub {
@@ -108,6 +86,15 @@ del '/api/quotes/:index' => sub {
     return;
 };
 
+get '/' => sub{
+    return {message => "Hello from Perl and Dancer"};
+};
+
+set public => path(dirname(__FILE__), '..', 'static');
+
+get "/demo/?" => sub {
+    send_file '/index.html'
+};
 
 dance;
 

@@ -61,7 +61,7 @@ router.route('/quotes')
   }
   newQuote.save(function (err, newQuote) {
     if (err) return console.error(err);
-    return reply.status(201).send(newQuote);
+    return reply.status(201).send({"index":quotecount});
   });
 });
 
@@ -102,7 +102,7 @@ router.route('/quotes/:index')
   delete upsertData._id;
   Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
     if (err) return reply.send(500, { error: err });
-    return reply.status(202).send(upsertData);
+    return reply.status(201).send({"index":request.params.index});
   });
 })
 // delete existing quote

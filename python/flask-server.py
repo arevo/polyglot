@@ -47,7 +47,8 @@ class Quote(Resource):
         except Exception as ve:
             print ve
             abort(400, str(ve))
-        return 201
+        resp_obj = {"index":quote_id}
+        return resp_obj, 201
 
     def delete(self, quote_id):
         try:
@@ -75,7 +76,8 @@ class QuoteList(Resource):
             mongo.db.quotes.insert(args)
         except Error as ve:
             abort(400, str(ve))
-        return 201
+        resp_obj = {'index':args["index"]}
+        return resp_obj, 201
 
 @app.route('/')
 def hello_world():
