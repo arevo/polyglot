@@ -1,5 +1,4 @@
 use Dancer;
-use Dancer::Plugin::CRUD;
 use MongoDB;
 
 my $client = MongoDB->connect();

@@ -18,7 +18,7 @@ set :bind, '0.0.0.0'
 
 
 before do
-  content_type 'application/json'
+  content_type 'application/json', :charset => 'utf-8'
 end
 
   namespace "/api" do
@@ -30,7 +30,7 @@ end
      # create
     post '/quotes' do
       top = Quote.all.desc(:index).limit(1)
-      newnumber = top[0][:index]+ 1
+      newnumber = top[0][:index] + 1
       @json = JSON.parse(request.body.read)
       if not @json['content'] or not @json['author'] then
         return [400, "Must include content and author"]
@@ -64,7 +64,7 @@ end
       @json = JSON.parse(request.body.read)
       quote = Quote.find_by(index: params[:index].to_i)
       return status 404 if quote.nil?
-      if not @json['content'] or not @json['author'] then
+      if not @json['content'] and not @json['author'] then
         return status 400
       end
       quote.update(
