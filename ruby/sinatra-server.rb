@@ -11,19 +11,11 @@ class Quote
   field :author
   field :content
 end
+
 Mongoid.load!("mongoid.yml", :development)
 set :port, 8080
 set :bind, '0.0.0.0'
 
-get '/demo*' do
-  content_type :html
-  File.read(File.join('../static', 'index.html'))
-end
-
-get '/' do
-  content_type :html
-  "Hello World from Sinatra"
-end
 
 before do
   content_type 'application/json'
@@ -33,6 +25,23 @@ end
      # list all
     get '/quotes' do
       Quote.all.desc(:index).limit(10).to_json
+    end
+
+     # create
+    post '/quotes' do
+      top = Quote.all.desc(:index).limit(1)
+      newnumber = top[0][:index]+ 1
+      @json = JSON.parse(request.body.read)
+      if not @json['content'] or not @json['author'] then
+        return [400, "Must include content and author"]
+      end
+      quote = Quote.new(
+                        content: @json['content'], 
+                        author: @json['author'], 
+                        index: newnumber)
+      quote.save
+      return_obj = {"index" => newnumber}
+      return [201, return_obj.to_json]
     end
 
     get '/quotes/random' do
@@ -50,29 +59,21 @@ end
       quote.to_json
     end
 
-    # create
-    post '/quotes' do
-      newnumber = Quote.count + 1
-      @json = JSON.parse(request.body.read)
-      quote = Quote.new(
-                        content: @json['content'], 
-                        author: @json['author'], 
-                        index: newnumber)
-      quote.save
-      newnumber.to_json
-    end
-
-    # update
+   # update
     put '/quotes/:index' do
       @json = JSON.parse(request.body.read)
       quote = Quote.find_by(index: params[:index].to_i)
       return status 404 if quote.nil?
+      if not @json['content'] or not @json['author'] then
+        return status 400
+      end
       quote.update(
                         content: @json['content'], 
                         author: @json['author']
                   )
       quote.save
-      params[:index].to_json
+      return_obj = {"index" => params[:index].to_i}
+      return [201, return_obj.to_json]
     end
 
     delete '/quotes/:index' do
@@ -82,3 +83,14 @@ end
       status 204
     end
   end
+
+get '/demo*' do
+  content_type :html
+  File.read(File.join('../static', 'index.html'))
+end
+
+get '/' do
+  content_type :html
+  "Hello World from Sinatra"
+end
+
