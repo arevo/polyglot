@@ -1,4 +1,6 @@
 <?php
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use \Slim\Http\Request;
 use \Slim\Http\Response;
 
@@ -17,13 +19,7 @@ $app->group('/api/quotes', function () {
         foreach ($quotes->find([], ['_id' => 0])->sort(['index' => -1])->limit(10) as $quote) {
             $results[] = $quote;
         }
-        $response
-            ->getBody()->write(json_encode($results, JSON_PRETTY_PRINT));
-        $newResponse = $response->withHeader(
-            'Content-type',
-            'application/json; charset=utf-8'
-        );
-        return $newResponse;
+        return $response->getBody()->write(json_encode($results, JSON_PRETTY_PRINT));
     });
 
     $this->post('', function (Request $request, Response $response, array $args) use ($quotes) {
@@ -70,32 +66,17 @@ $app->group('/api/quotes', function () {
         // Log the record
         $this->logger->info("Random record: \n" . $record . "\n");
 
-        // Return the JSON response as application/json
-        $response
-            ->getBody()->write($record);
-        $newResponse = $response->withHeader(
-                        'Content-type',
-                        'application/json; charset=utf-8'
-                       );
-        return $newResponse;
+        return $response->getBody()->write($record);
     });
 
 
     $this->group('/{index}', function() use ($quotes) {
         $this->get('', function(Request $request, Response $response, array $args) use ($quotes) {
-            if ($result = $quotes->find(['index' => (int)   $args['index']], ['_id' => 0])) {
-                $record = $result->getNext();
-
-                $record = json_encode($record, JSON_PRETTY_PRINT);
-
-        	$response->getBody()->write($record);
-	        $newResponse = $response->withHeader(
-                        'Content-type',
-                        'application/json; charset=utf-8'
-                       );
-		return $newResponse;
-	    };
-            return $response->withStatus(500, 'Internal Server Error');
+            if ($result = $quotes->find(['index' => (int) $args['index']], ['_id' => 0])) {
+                return $response->getBody()->write(
+                    json_encode($result->getNext(), JSON_PRETTY_PRINT)
+                );
+            }
         });
 
         $this->put('', function(Request $request, Response $response, array $args) use ($quotes) {
@@ -139,13 +120,17 @@ $app->group('/api/quotes', function () {
             return $response->withStatus(500, 'Internal Server Error');
         });
     });
+})
+->add(function (RequestInterface $request, ResponseInterface $response, callable $callable) {
+    return $callable($request, $response)
+        ->withHeader('Content-Type', 'application/json; charset=utf-8');
 });
 
 $app->get('/', function(Request $request, Response $response, $args) {
     return $response->getBody()->write('Hello World from PHP Slim');
 });
 
-$app->get('/demo', function(Request $request, Response $response, $args) {
+$app->get('/demo/', function(Request $request, Response $response, $args) {
     $content = file_get_contents('../static/index.html');
     return $response->getBody()->write($content);
 });
