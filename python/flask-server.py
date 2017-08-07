@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, Response, send_from_directory
+
 from flask_restful import reqparse, abort, Api, Resource
-from flask.ext.pymongo import PyMongo
+from flask_pymongo import PyMongo
 from bson.json_util import dumps, default
 import os
 from random import randint
@@ -66,7 +67,7 @@ class Quote(Resource):
                 }
             }, upsert=True)
         except Exception as ve:
-            print ve
+            print (ve)
             abort(400, str(ve))
         resp_obj = {"index": quote_id}
         return resp_obj, 201
@@ -77,7 +78,7 @@ class Quote(Resource):
                 'index': int(quote_id)
             })
         except Exception as ve:
-            print ve
+            print (ve)
             abort(400, str(ve))
         return '', 204
 
