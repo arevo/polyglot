@@ -1,26 +1,13 @@
 // *******************************************
-// DATABASE STUFF ****************************
+// DATABASE SETUP ****************************
 // *******************************************
-var mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost/test');
-var db = mongoose.connection;
-mongoose.Promise = global.Promise;
-
-var quoteSchema = mongoose.Schema({
-        content: String,
-        author: String,
-        index: Number
-});
-
-var quotecount;
-var Quote = mongoose.model('Quote', quoteSchema)
-// Find the highest quote number for creating new index
-Quote.findOne().sort({"index": -1}).exec(function(err, quote){
-   quotecount = quote.index;
-});
+let MongoClient = require('mongodb').MongoClient;
+let url = 'mongodb://localhost:27017/test'
+let quotes
+let topquote
 
 // *******************************************
-// EXPRESS STUFF  ****************************
+// EXPRESS SETUP  ****************************
 // *******************************************
 
 var express = require('express');
@@ -29,96 +16,117 @@ var router = express.Router();
 var path = require('path');
 var bodyParser = require('body-parser');
 
-// Register static path
 app.use('/demo', express.static(path.join(__dirname, '..', 'static')));
 app.use(bodyParser.json());
 app.set('json spaces', 2);
 
-// Base URI for the REST api routes
-app.use('/api', router);
-
-// Quote list
-router.route('/quotes')
-// Get last 10 quotes
-.get(function(request, reply) {
-   var result = Quote.find().sort({'index': -1}).limit(10);
-   result.exec(function(err, quotes) {
-	   reply.send(quotes);
-   });
-})
-// Create new quote
-.post(function(request, reply) {
-  if(!request.body.hasOwnProperty('content')) {
-    return reply.status(400).send('Error 400: Post syntax incorrect.');
-  }
-  // Simple way to create a new quote index for this demo
-  quotecount = quotecount+1; 
-  var newQuote;
-  if (request.body.hasOwnProperty('author')) {
-    newQuote = new Quote({'content': request.body.content, 'author': request.body.author, 'index': quotecount});
-  } else {
-    newQuote = new Quote({'content': request.body.content, 'index':quotecount});
-  }
-  newQuote.save(function (err, newQuote) {
-    if (err) return console.error(err);
-    return reply.status(201).send({"index":quotecount});
-  });
-});
-
-// Random quote
-// /api/quotes/random
-router.route('/quotes/random')
-.get(function(request, reply) {
-    var random = Math.floor(Math.random() * quotecount);
-    var result = Quote.findOne({"index":random});
-    result.exec(function(err, quote) {
-      reply.send(quote);
-    });
-});
-
-// /api/quotes/1
-router.route('/quotes/:index')
-// get existing quote
-.get(function(request, reply) {
-    var result = Quote.findOne({"index":request.params.index});
-    result.exec(function(err, quote) {
-      reply.send(quote);
-    });
-})
-// update existing quote
-.put(function(request, reply) {
-  if(!request.body.hasOwnProperty('content') && (!request.body.hasOwnProperty('author'))) {
-    return reply.status(400).send('Error 400: Put syntax incorrect.');
-  }
-  var query = {'index':request.params.index};
-  var newQuote = new Quote();
-  if (request.body.hasOwnProperty('author')) {
-        newQuote.author = request.body.author;
-  };
-  if (request.body.hasOwnProperty('content')) {
-        newQuote.content = request.body.content;
-  };
-  var upsertData = newQuote.toObject();
-  delete upsertData._id;
-  Quote.findOneAndUpdate(query, upsertData, {upsert:true}, function(err, doc){
-    if (err) return reply.send(500, { error: err });
-    return reply.status(201).send({"index":request.params.index});
-  });
-})
-// delete existing quote
-.delete(function(request, reply) {
-   result = Quote.findOneAndRemove({"index":request.params.index});
-   result.exec(function (err, result) {
-        reply.status(204).send();
-    });
-});
+// *******************************************
+// FRONT PAGE APPLICATION AND GREETING *******
+// *******************************************
 
 // index with helpful message
-app.get('/', function(req, res) {
-  res.send('Hello world from express');
+app.get('/', (request, reply) => {
+  reply.send('Hello world from express');
 });
 
-var server = app.listen(8080, "0.0.0.0", function() {
-  console.log('Express is listening to http://localhost:8080');
-});
+// *******************************************
+// REST API ROUTES ***************************
+// *******************************************
+
+app.use('/api', router);
+
+// QUOTE LIST
+router.route('/quotes')
+  .get((request, reply) => {
+      quotes.find().sort({index:-1}).limit(10).toArray((err, results) => {
+	      reply.send(results)
+      })
+  })
+  .post((request, reply) => {
+    // There has to be at *least* a content field
+    if(!request.body.hasOwnProperty('content')) {
+      return reply.status(400).send('Error 400: Post syntax incorrect.');
+    }
+    topquote += 1;
+
+    // Create the object from the POST body
+    let quoteBody = {
+      "content":request.body.content,
+      "index":topquote
+    } 
+
+    if (request.body.hasOwnProperty('author')) {
+      quoteBody["author"] = request.body.author
+    }
+
+    // Save the new quote
+    quotes.save(quoteBody, (err, result) => {
+      return reply.status(201).send({"index":topquote});
+    })
+  })
+
+// RANDOM QUOTE FROM THE DATABASE
+router.route('/quotes/random')
+  .get((request, reply) => {
+    let random = Math.floor(Math.random()*topquote)
+    console.log(random)
+    quotes.findOne({"index":random}, (err, results) => {
+       reply.send(results)
+    })
+  })
+
+// SINGLE QUOTE
+router.route('/quotes/:index')
+  .get((request, reply) => {
+    index = parseInt(request.params.index)
+    quotes.findOne({"index":index}, (err, results) => {
+       reply.send(results)
+    })
+  })
+  .put((request, reply) => {
+    let newQuote = {};
+    let query = {'index':parseInt(request.params.index)}
+    if(!request.body.hasOwnProperty('content')) {
+      return reply.status(400).send('Error 400: Put syntax incorrect.');
+    } else {
+      newQuote["content"] = request.body.content;
+      newQuote["index"] = parseInt(request.params.index);
+    }
+
+    if (request.body.hasOwnProperty('author')) {
+      newQuote["author"] = request.body.author;
+    }
+
+    quotes.findOneAndUpdate(query, newQuote, {upsert:true}, (err, results) => {
+      if (err) return reply.send(500, { error: err });
+      return reply.status(201).send({"index":request.params.index});
+    })
+  })
+  .delete((request, reply) => {
+    let query = {'index':parseInt(request.params.index)}
+    quotes.findOneAndDelete(query, (err, results) => {
+      reply.status(204).send();
+    })
+  })
+
+
+// ********************************************
+// SERVERS ************************************
+// ********************************************
+
+MongoClient.connect(url, (err, database) => {
+    if (err) return console.log(err)
+    console.log("Connected successfully to database server");
+    quotes = database.collection('quotes')
+
+    // Find the largest index for creating new quotes
+    quotes.find().sort({"index": -1}).limit(1).toArray((err, quote) => {
+      topquote = quote[0]["index"]
+    })
+
+    app.listen(8080, "0.0.0.0", function() {
+      console.log('Express is listening to http://0.0.0.0:8080');
+    })
+})
+
 

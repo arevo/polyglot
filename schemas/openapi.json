@@ -23,7 +23,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "An array of products",
+                        "description": "An array of quotes",
                         "schema": {
                             "type": "array",
                             "items": {

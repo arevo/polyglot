@@ -1,8 +1,7 @@
-require 'rubygems'
 require 'sinatra'
 require 'sinatra/namespace'
 require 'mongoid'
-require 'mongo'
+
 require 'json/ext' # required for .to_json
 
 class Quote
@@ -27,6 +26,14 @@ end
       Quote.all.desc(:index).limit(10).to_json
     end
 
+    get '/quotes/random' do
+      newnumber = Quote.count
+      random_num = rand(newnumber)
+      quote = Quote.find_by(index: random_num.to_i)
+      return status 404 if quote.nil?
+      quote.to_json
+    end
+
      # create
     post '/quotes' do
       top = Quote.all.desc(:index).limit(1)
@@ -45,28 +52,21 @@ end
     end
 
     get '/quotes/random' do
-      newnumber = Quote.count
-      random_num = rand(newnumber)
-      quote = Quote.find_by(index: random_num.to_i)
-      return status 404 if quote.nil?
-      quote.to_json
+      top = Quote.all.desc(:index).limit(1)
+      random_num = rand(top[0][:index])
+      Quote.find_by(index: random_num.to_i).to_json
     end
 
     # view one
     get '/quotes/:index' do
-      quote = Quote.find_by(index: params[:index].to_i)
-      return status 404 if quote.nil?
-      quote.to_json
+      Quote.find_by(index: params[:index].to_i).to_json
     end
 
    # update
     put '/quotes/:index' do
       @json = JSON.parse(request.body.read)
       quote = Quote.find_by(index: params[:index].to_i)
-      return status 404 if quote.nil?
-      if not @json['content'] and not @json['author'] then
-        return status 400
-      end
+
       quote.update(
                         content: @json['content'], 
                         author: @json['author']
