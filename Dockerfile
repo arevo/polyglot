@@ -1,8 +1,9 @@
-FROM python:2.7.10
+FROM ubuntu
 MAINTAINER Kirsten Hunter (khunter@akamai.com)
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes -q curl python-all wget vim python-pip php-pear php5 php5-mongo php5-dev ruby ruby-dev perl5 npm 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes mongodb-server mongodb-dev mongodb httpie screen zlib lib32z1-dev libssl-dev
+RUN apt-get install -y curl patch gawk g++ gcc make libc6-dev patch libreadline6-dev zlib1g-dev libssl-dev libyaml-dev libsqlite3-dev sqlite3 autoconf libgdbm-dev libncurses5-dev automake libtool bison pkg-config libffi-dev software-properties-common 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q libssl-dev python-all wget vim python-pip php php-curl ruby-dev nodejs-dev npm php-pear php-dev ruby perl git screen
+
 RUN curl -sL https://deb.nodesource.com/setup_4.x |  bash -
 RUN apt-get install -y --force-yes nodejs
 RUN mkdir -p /data/db
